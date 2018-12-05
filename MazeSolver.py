@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import math
 
 """
 Peraturan gambar Maze-nya :
@@ -139,6 +140,19 @@ def leftNodeOf(dataNodes, nodeId) :
 
     return leftNodeId
         
+def nearEndNode(dataNodes, adjList, endNode) :
+    distance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[0]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[0]][1])**2)
+    node = adjList[0]
+    i = 1
+    while i < len(adjList) :
+        currDistance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[i]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[i]][1])**2)
+        if distance > currDistance :
+            distance = currDistance
+            node = adjList[i]
+
+        i += 1
+
+    return node
 
 def solve():
     ### KAMUS
@@ -196,42 +210,61 @@ def solve():
     while(currNode != endNode) :
         
         while(i < len(adjNodes) and currNode != endNode) :
-            nextNode = adjNodes[i]
+            nextNode = nearEndNode(dataNodes, adjNodes, endNode)
+            """
+            print("currNode : ", end="", flush=True)
+            print(currNode)
+            print("nextNode : ", end="", flush=True)
+            print(nextNode)
+            print("adjNodes : ", end="", flush=True)
+            print(adjNodes)
+            print("solveStack : ", end="", flush=True)
+            print(solveStack)
+            """
             if(not (nextNode in vistNodes)) :
+                dictNodes[currNode].remove(nextNode)
+                """
+                print("dictNodes[currNode] : ", end="", flush=True)
+                print(dictNodes[currNode])
+                """
                 currNode = nextNode
                 vistNodes.append(currNode)
                 solveStack.append(currNode)
                 adjNodes = dictNodes[currNode]
-                i = 0
+                #i = 0
 
             else :
-                i += 1
+                dictNodes[currNode].remove(nextNode)
+                adjNodes = dictNodes[currNode]
+                #i += 1
 
         if(len(solveStack) > 0 and currNode != endNode) :
             lastNode = solveStack.pop(len(solveStack) - 1)
+            """
+            print("solveStack : ", end="", flush=True)
+            print(solveStack)
+            """
             currNode = solveStack[len(solveStack) - 1]
             adjNodes = dictNodes[currNode]
             i = 0
         else :
             break
 
+    if(len(solveStack) > 0) :
+        endTimer = time.process_time()
+        imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
+        drawPath(dataNodes, solveStack, mazeImg)
+        print("Graphing Time : ", end="", flush=True)
+        print(endTimer - startTimer)
 
-    endTimer = time.process_time()
-    imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
-    drawPath(dataNodes, solveStack, mazeImg)
-    #print(dictNodes)
-    print("Graphing Time : ", end="", flush=True)
-    print(endTimer - startTimer)
-    print(solveStack)
-    
-    
-    #cv2.line(mazeImg, (3,1), (3,0), (0, 0, 255), 1)
-    dim = (400, 400)
-    mazeImg = cv2.resize(mazeImg, dim, interpolation = cv2.INTER_AREA)
-    imgBefore = cv2.resize(imgBefore, dim, interpolation = cv2.INTER_AREA)
-    cv2.imshow("after", mazeImg)
-    cv2.imshow("before", imgBefore)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()  
+        dim = (400, 400)
+        mazeImg = cv2.resize(mazeImg, dim, interpolation = cv2.INTER_AREA)
+        imgBefore = cv2.resize(imgBefore, dim, interpolation = cv2.INTER_AREA)
+        cv2.imshow("after", mazeImg)
+        cv2.imshow("before", imgBefore)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    else :
+        print("There\'s no way from start to finish")  
 
 solve()
