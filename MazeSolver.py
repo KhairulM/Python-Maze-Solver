@@ -90,7 +90,7 @@ def addEdge(dictNodes, identity1, identity2) :
 def isJunction(mazeImg, currX, currY) :
     ## Menentutkan apakah suatu kotak dalam gambar tersebut merupakan tempat yang pas untuk menaruh sebuah node baru
     lenRow = len(mazeImg)
-    lenCol = len(mazeImg[lenRow])
+    lenCol = len(mazeImg[lenRow-1])
     
     if(np.any(mazeImg[currX][currY]) != 0):
         wayDown = True if(currX + 1 < lenRow and np.any(mazeImg[currX+1][currY] != 0)) else False
@@ -176,7 +176,7 @@ def solve():
     ## Membuat graf dari maze
     startTimer = time.process_time()
     lenRow = len(mazeImg)
-    lenCol = len(mazeImg[lenRow])
+    lenCol = len(mazeImg[lenRow-1])
     for i in range(0, lenRow) :
         for j in range(0, lenCol) :
             ## Menentukan apakah pada posisi i, j terdapat sebuah junction, jika ya maka buat node di situ
