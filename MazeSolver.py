@@ -177,6 +177,8 @@ def solve():
     startTimer = time.process_time()
     lenRow = len(mazeImg)
     lenCol = len(mazeImg[lenRow-1])
+
+
     for i in range(0, lenRow) :
         for j in range(0, lenCol) :
             ## Menentukan apakah pada posisi i, j terdapat sebuah junction, jika ya maka buat node di situ
@@ -258,7 +260,7 @@ def solve():
         endTimer = time.process_time()
         imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
         drawPath(dataNodes, solveStack, mazeImg)
-        print("Graphing Time : ", end="", flush=True)
+        print("Elapsed Time : ", end="", flush=True)
         print(endTimer - startTimer)
 
         dim = (400, 400)
