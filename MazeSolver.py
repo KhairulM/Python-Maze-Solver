@@ -89,10 +89,13 @@ def addEdge(dictNodes, identity1, identity2) :
 
 def isJunction(mazeImg, currX, currY) :
     ## Menentutkan apakah suatu kotak dalam gambar tersebut merupakan tempat yang pas untuk menaruh sebuah node baru
+    lenRow = len(mazeImg)
+    lenCol = len(mazeImg[lenRow])
+    
     if(np.any(mazeImg[currX][currY]) != 0):
-        wayDown = True if(currX + 1 < len(mazeImg) and np.any(mazeImg[currX+1][currY] != 0)) else False
+        wayDown = True if(currX + 1 < lenRow and np.any(mazeImg[currX+1][currY] != 0)) else False
         wayUp = True if(currX != 0 and np.any(mazeImg[currX-1][currY] != 0)) else False
-        wayRight = True if(currY + 1 < len(mazeImg[currX]) and np.any(mazeImg[currX][currY+1] != 0)) else False
+        wayRight = True if(currY + 1 < lenCol and np.any(mazeImg[currX][currY+1] != 0)) else False
         wayLeft = True if(currY != 0 and np.any(mazeImg[currX][currY-1] != 0)) else False
 
         if(not ((wayLeft and wayRight and not (wayDown or wayUp)) or (wayUp and wayDown and not (wayLeft or wayRight)))) :
@@ -144,7 +147,8 @@ def nearEndNode(dataNodes, adjList, endNode) :
     distance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[0]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[0]][1])**2)
     node = adjList[0]
     i = 1
-    while i < len(adjList) :
+    lenAdj = len(adjList)
+    while i < lenAdj :
         currDistance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[i]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[i]][1])**2)
         if distance > currDistance :
             distance = currDistance
@@ -171,16 +175,18 @@ def solve():
 
     ## Membuat graf dari maze
     startTimer = time.process_time()
-    for i in range(0, len(mazeImg)) :
-        for j in range(0, len(mazeImg[i])) :
+    lenRow = len(mazeImg)
+    lenCol = len(mazeImg[lenRow])
+    for i in range(0, lenRow) :
+        for j in range(0, lenCol) :
             ## Menentukan apakah pada posisi i, j terdapat sebuah junction, jika ya maka buat node di situ
             if(isJunction(mazeImg, i, j)) :
 
                 ## Menentukan apakah dari node tersebut terdapat jalan ke atas, ke samping, atau ke bawah. Jika terdapat jalan hasilnya 1 (True)
                 UP = 1 if(i != 0 and np.any(mazeImg[i-1][j] != 0)) else 0
-                DOWN = 1 if(i + 1 < len(mazeImg) and np.any(mazeImg[i+1][j] != 0)) else 0
+                DOWN = 1 if(i + 1 < lenRow and np.any(mazeImg[i+1][j] != 0)) else 0
                 LEFT = 1 if(j != 0 and np.any(mazeImg[i][j-1] != 0)) else 0
-                RIGHT = 1 if(j + 1 < len(mazeImg[i]) and np.any(mazeImg[i][j+1] != 0)) else 0
+                RIGHT = 1 if(j + 1 < lenCol and np.any(mazeImg[i][j+1] != 0)) else 0
                 
                 ## Menambahkan node di posisi tersebut
                 addNode(dictNodes, dataNodes, identity, j, i, UP, DOWN, LEFT, RIGHT) # j, i karena saat di gambarkan, j adalah kolom (X) dan i adalah baris (Y)
@@ -204,12 +210,12 @@ def solve():
     ## Bagian untuk beneran solvingnya (pakai depth first search (stack))
     currNode = startNode                    # Current Node
     adjNodes = dictNodes[currNode]          # List of adjacent and unvisited Node from current node
-    solveStack.append(currNode)              # Stack to process serve as a path too leading from start to finish
+    solveStack.append(currNode)             # Stack to process serve as a path too leading from start to finish
     vistNodes.append(currNode)              # Changging current node to visited
     i = 0
     while(currNode != endNode) :
         
-        while(i < len(adjNodes) and currNode != endNode) :
+        while(adjNodes != [] and currNode != endNode) :
             nextNode = nearEndNode(dataNodes, adjNodes, endNode)
             """
             print("currNode : ", end="", flush=True)
@@ -231,12 +237,10 @@ def solve():
                 vistNodes.append(currNode)
                 solveStack.append(currNode)
                 adjNodes = dictNodes[currNode]
-                #i = 0
 
             else :
                 dictNodes[currNode].remove(nextNode)
                 adjNodes = dictNodes[currNode]
-                #i += 1
 
         if(len(solveStack) > 0 and currNode != endNode) :
             lastNode = solveStack.pop(len(solveStack) - 1)
@@ -250,7 +254,7 @@ def solve():
         else :
             break
 
-    if(len(solveStack) > 0) :
+    if(solveStack != []) :
         endTimer = time.process_time()
         imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
         drawPath(dataNodes, solveStack, mazeImg)
