@@ -3,16 +3,6 @@ import numpy as np
 import time
 import math
 
-"""
-Peraturan gambar Maze-nya :
-
-1. Pintu masuk berada di atas dan cuma satu
-2. Pintu keluar berada di bawah dan cuma satu
-3. Kotak terluar dari maze hanyalah pintu masuk dan keluar, sisanya dinding hitam atau border
-4. Terdapat minimal 1 jalur/lintasan dari pintu masuk sampai pintu keluar (min. 1 solusi)       # Mungkin bisa dimodif lagi nanti
-
-"""
-
 def drawPath(dataNodes, solveStack, mazeImg) :
     lenStack = len(solveStack)
     i = 0
@@ -26,8 +16,9 @@ def drawPath(dataNodes, solveStack, mazeImg) :
 def drawGraph(dictNodes, dataNodes, mazeImg) :
    ## Inisialisasi Node source pertama
    currSrcNode = 0
+   lenDict = len(dictNodes)
 
-   while(currSrcNode < len(dictNodes)) :
+   while(currSrcNode < lenDict) :
        ## Posisi Node source
        currSrcPos = (dataNodes[currSrcNode][0], dataNodes[currSrcNode][1])
        i = 0
@@ -54,9 +45,9 @@ def searchNode(dictNodes, identity) :
 
     return isFound
 
-def addNode(dictNodes, dataNodes, identity, posX, posY, way1 = 0, way2 = 0, way3 = 0, way4 = 0) :
+def addNode(dictNodes, dataNodes, identity, posX, posY, way1, way2, way3, way4, visited) :
     ## Menambahkan node ke list adjency dan list data2 node
-    dataNodes[identity] = [posX, posY, way1, way2, way3, way4]
+    dataNodes[identity] = [posX, posY, way1, way2, way3, way4, visited]
     dictNodes[identity] = []
 
 def searchEdges(dictNodes, identity1, identity2) :
@@ -163,12 +154,11 @@ def solve():
     dataNodes = {}          # Isinya data posisiX, posisiY, up, down, left, right
     dictNodes = {}          # Isinya adjency list
     solveStack = []         # Dipakai untuk depth first search
-    vistNodes = []          # Dipakai untuk mencatat apakah Node sudah pernah didatangi
     identity = 0            # Inisialisasi ID Node pertama
    
 
     ### ALGORITMA
-    ## Mempersiapkan image untuk di read
+    ## Mempersiapkan image untuk di-read
     picName = input("Nama file : ")
     mazeImg = cv2.imread(picName, cv2.IMREAD_COLOR)
 
@@ -191,13 +181,15 @@ def solve():
                 RIGHT = 1 if(j + 1 < lenCol and np.any(mazeImg[i][j+1] != 0)) else 0
                 
                 ## Menambahkan node di posisi tersebut
-                addNode(dictNodes, dataNodes, identity, j, i, UP, DOWN, LEFT, RIGHT) # j, i karena saat di gambarkan, j adalah kolom (X) dan i adalah baris (Y)
+                addNode(dictNodes, dataNodes, identity, j, i, UP, DOWN, LEFT, RIGHT, False)            # j, i karena saat di gambarkan, j adalah kolom (X) dan i adalah baris (Y)
 
                 ## Membentuk edges dari node yang baru dibuat dengan node di atasnya dan/atau di kirinya
+                # Jika ada jalan ke atas
                 if(UP == 1) :
                     upperNode = upperNodeOf(dataNodes, identity)
                     if(upperNode != None) :
                         addEdge(dictNodes, identity, upperNode)
+                # Jika ada jalan ke kiri
                 if(LEFT == 1) :
                     leftNode = leftNodeOf(dataNodes, identity)
                     if(leftNode != None) :
@@ -207,36 +199,23 @@ def solve():
     ## Menentukan Start Node dan End Node dari data nodes
     startNode = 0
     endNode = len(dataNodes) - 1 
-
+    
 
     ## Bagian untuk beneran solvingnya (pakai depth first search (stack))
     currNode = startNode                    # Current Node
     adjNodes = dictNodes[currNode]          # List of adjacent and unvisited Node from current node
     solveStack.append(currNode)             # Stack to process serve as a path too leading from start to finish
-    vistNodes.append(currNode)              # Changging current node to visited
-    i = 0
+    dataNodes[currNode][6] = True           # Changging current node to visited
+
     while(currNode != endNode) :
         
         while(adjNodes != [] and currNode != endNode) :
             nextNode = nearEndNode(dataNodes, adjNodes, endNode)
-            """
-            print("currNode : ", end="", flush=True)
-            print(currNode)
-            print("nextNode : ", end="", flush=True)
-            print(nextNode)
-            print("adjNodes : ", end="", flush=True)
-            print(adjNodes)
-            print("solveStack : ", end="", flush=True)
-            print(solveStack)
-            """
-            if(not (nextNode in vistNodes)) :
+           
+            if(not (dataNodes[nextNode][6])) :
                 dictNodes[currNode].remove(nextNode)
-                """
-                print("dictNodes[currNode] : ", end="", flush=True)
-                print(dictNodes[currNode])
-                """
                 currNode = nextNode
-                vistNodes.append(currNode)
+                dataNodes[nextNode][6] = True
                 solveStack.append(currNode)
                 adjNodes = dictNodes[currNode]
 
@@ -246,25 +225,21 @@ def solve():
 
         if(len(solveStack) > 0 and currNode != endNode) :
             lastNode = solveStack.pop(len(solveStack) - 1)
-            """
-            print("solveStack : ", end="", flush=True)
-            print(solveStack)
-            """
             currNode = solveStack[len(solveStack) - 1]
             adjNodes = dictNodes[currNode]
-            i = 0
         else :
             break
 
     if(solveStack != []) :
         endTimer = time.process_time()
-        imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
-        drawPath(dataNodes, solveStack, mazeImg)
         print("Elapsed Time : ", end="", flush=True)
         print(endTimer - startTimer)
 
+        drawPath(dataNodes, solveStack, mazeImg)
+
         dim = (400, 400)
         mazeImg = cv2.resize(mazeImg, dim, interpolation = cv2.INTER_AREA)
+        imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
         imgBefore = cv2.resize(imgBefore, dim, interpolation = cv2.INTER_AREA)
         cv2.imshow("after", mazeImg)
         cv2.imshow("before", imgBefore)
