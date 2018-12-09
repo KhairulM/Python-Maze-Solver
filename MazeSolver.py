@@ -4,6 +4,7 @@ import time
 import math
 
 def drawPath(dataNodes, solveStack, mazeImg) :
+    ## Menggambarkan lintasan yang sudah selesai
     lenStack = len(solveStack)
     i = 0
 
@@ -46,12 +47,12 @@ def searchNode(dictNodes, identity) :
     return isFound
 
 def addNode(dictNodes, dataNodes, identity, posX, posY, way1, way2, way3, way4, visited) :
-    ## Menambahkan node ke list adjency dan list data2 node
+    ## Menambahkan node ke list adjency dan list data node-node
     dataNodes[identity] = [posX, posY, way1, way2, way3, way4, visited]
     dictNodes[identity] = []
 
 def searchEdges(dictNodes, identity1, identity2) :
-    ## Mencari apakah sudah apa connection antara node1 dan node2
+    ## Mencari apakah sudah ada sisi antara node 1 dan node 2
     isFound = False
 
     if(searchNode(dictNodes, identity1) and searchNode(dictNodes, identity2)) :
@@ -79,7 +80,7 @@ def addEdge(dictNodes, identity1, identity2) :
     dictNodes[identity2].append(identity1)
 
 def isJunction(mazeImg, currX, currY) :
-    ## Menentutkan apakah suatu kotak dalam gambar tersebut merupakan tempat yang pas untuk menaruh sebuah node baru
+    ## Menentutkan apakah suatu kotak/pixel dalam gambar tersebut merupakan tempat yang pas untuk menaruh sebuah node baru
     lenRow = len(mazeImg)
     lenCol = len(mazeImg[lenRow-1])
     
@@ -135,6 +136,7 @@ def leftNodeOf(dataNodes, nodeId) :
     return leftNodeId
         
 def nearEndNode(dataNodes, adjList, endNode) :
+    ## Mencari node dari dari adjList yang paling dekat dengan titik akhir
     distance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[0]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[0]][1])**2)
     node = adjList[0]
     i = 1
@@ -159,16 +161,16 @@ def solve():
 
     ### ALGORITMA
     ## Mempersiapkan image untuk di-read
-    picName = input("Nama file : ")
+    picName = input("File name : ")
     mazeImg = cv2.imread(picName, cv2.IMREAD_COLOR)
 
 
-    ## Membuat graf dari maze
+    ## Mempersiapkan timer dan variable lain
     startTimer = time.process_time()
     lenRow = len(mazeImg)
     lenCol = len(mazeImg[lenRow-1])
 
-
+    ## Membuat graf dari gambar labirin
     for i in range(0, lenRow) :
         for j in range(0, lenCol) :
             ## Menentukan apakah pada posisi i, j terdapat sebuah junction, jika ya maka buat node di situ
@@ -201,10 +203,11 @@ def solve():
     endNode = len(dataNodes) - 1 
     
 
-    ## Bagian untuk beneran solvingnya (pakai depth first search (stack))
+    ## Bagian untuk solvingnya (pakai depth first search (stack) ditambah sedikit elemen dari pencariaan jalur terpendek)
     currNode = startNode                    # Current Node
     adjNodes = dictNodes[currNode]          # List of adjacent and unvisited Node from current node
     solveStack.append(currNode)             # Stack to process serve as a path too leading from start to finish
+    lenSolve = 1                            # Untuk optimisasi pencarian
     dataNodes[currNode][6] = True           # Changging current node to visited
 
     while(currNode != endNode) :
@@ -212,39 +215,55 @@ def solve():
         while(adjNodes != [] and currNode != endNode) :
             nextNode = nearEndNode(dataNodes, adjNodes, endNode)
            
+           ## Jika nextNode belum pernah dikunjungi
             if(not (dataNodes[nextNode][6])) :
                 dictNodes[currNode].remove(nextNode)
                 currNode = nextNode
                 dataNodes[nextNode][6] = True
                 solveStack.append(currNode)
+                lenSolve += 1
                 adjNodes = dictNodes[currNode]
 
+            ## Jika nextNode sudah pernah dikunjungi
             else :
                 dictNodes[currNode].remove(nextNode)
                 adjNodes = dictNodes[currNode]
 
-        if(len(solveStack) > 0 and currNode != endNode) :
-            lastNode = solveStack.pop(len(solveStack) - 1)
-            currNode = solveStack[len(solveStack) - 1]
+        ## Jika tidak ada simpul yang bertetanggaan dengan currNode atau semua simpul yang bertetanggaan sudah pernah dikunjungi
+        if(lenSolve > 0 and currNode != endNode) :
+            lastNode = solveStack.pop(lenSolve - 1)
+            lenSolve -= 1
+            currNode = solveStack[lenSolve - 1]
             adjNodes = dictNodes[currNode]
         else :
             break
 
-    if(solveStack != []) :
+    ## Jika ditemukan lintasan dari titik awal ke titik akhir
+    if(lenSolve > 0) :
+
+        ## Menghentikan timer
         endTimer = time.process_time()
         print("Elapsed Time : ", end="", flush=True)
         print(endTimer - startTimer)
 
+        ## Menggambar hasil solusi di gambar labirinnya
         drawPath(dataNodes, solveStack, mazeImg)
 
+        ## Me-resize gambar agar mudah dilihat
         dim = (400, 400)
         mazeImg = cv2.resize(mazeImg, dim, interpolation = cv2.INTER_AREA)
         imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
         imgBefore = cv2.resize(imgBefore, dim, interpolation = cv2.INTER_AREA)
+
+        ## Menampilkan gambar ke layar
         cv2.imshow("after", mazeImg)
         cv2.imshow("before", imgBefore)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+        cv2.imwrite("rez" + picName, imgBefore)
+        cv2.imwrite("hasilpath" + picName, mazeImg)
+
+    ## jika tidak ditemukan lintasan dari titik awal ke titik akhir
     else :
         print("There\'s no way from start to finish")  
 
