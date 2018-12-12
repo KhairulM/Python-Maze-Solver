@@ -11,8 +11,16 @@ def drawPath(dataNodes, solveStack, mazeImg) :
     while(i + 1 < lenStack) :
         currPos = (dataNodes[solveStack[i]][0], dataNodes[solveStack[i]][1])
         nextPos = (dataNodes[solveStack[i + 1]][0], dataNodes[solveStack[i + 1]][1])
-        cv2.line(mazeImg, currPos, nextPos, (0, 0, 200), 1)
+        cv2.line(mazeImg, currPos, nextPos, (100+i/2, i/3, 255-i/2), 1)
         i += 1
+
+def animate(dataNodes, solveStack, picName) :
+    tempImg = cv2.imread(picName, cv2.IMREAD_COLOR)
+    drawPath(dataNodes, solveStack, tempImg)
+    dim = (400, 400)
+    rezTemp = cv2.resize(tempImg, dim, interpolation = cv2.INTER_AREA)
+    cv2.imshow("Solving...", rezTemp)
+    cv2.waitKey(1)                              ##Kecepatan animasi
 
 def drawGraph(dictNodes, dataNodes, mazeImg) :
    ## Inisialisasi Node source pertama
@@ -99,7 +107,6 @@ def isJunction(mazeImg, currX, currY) :
 
 def upperNodeOf(dataNodes, nodeId) :
     ## Mencari node atas terdekat (satu kolom) dari nodeId
-    isFound = False
     upNodeId = None
     enum = nodeId
 
@@ -107,10 +114,10 @@ def upperNodeOf(dataNodes, nodeId) :
     thisNodeY = thisNode[0]
     enum -= 1
 
-    while(not isFound and enum >= 0):
+    while(enum >= 0):
         if(dataNodes[enum][0] == thisNodeY):
             upNodeId = enum
-            isFound = True
+            break
         else :
             enum -= 1
 
@@ -118,7 +125,6 @@ def upperNodeOf(dataNodes, nodeId) :
 
 def leftNodeOf(dataNodes, nodeId) :
     ## Mencari node kiri (satu baris) terdekat dari nodeId
-    isFound = False
     leftNodeId = None
     enum = nodeId
 
@@ -126,10 +132,10 @@ def leftNodeOf(dataNodes, nodeId) :
     thisNodeX = thisNode[1]
     enum -= 1
 
-    while(not isFound and enum >= 0):
+    while(enum >= 0):
         if(dataNodes[enum][1] == thisNodeX):
             leftNodeId = enum
-            isFound = True
+            break
         else :
             enum -= 1
 
@@ -141,6 +147,7 @@ def nearEndNode(dataNodes, adjList, endNode) :
     node = adjList[0]
     i = 1
     lenAdj = len(adjList)
+
     while i < lenAdj :
         currDistance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[i]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[i]][1])**2)
         if distance > currDistance :
@@ -157,6 +164,8 @@ def solve():
     dictNodes = {}          # Isinya adjency list
     solveStack = []         # Dipakai untuk depth first search
     identity = 0            # Inisialisasi ID Node pertama
+    arrUpNodes = {}         # Menyimpan node teratas dari setiap kolom
+    arrLeftNodes = {}       # Menyimpan node terkiri dari setiap baris
    
 
     ### ALGORITMA
@@ -166,9 +175,15 @@ def solve():
 
 
     ## Mempersiapkan timer dan variable lain
-    startTimer = time.process_time()
+    graphTimer = time.process_time()
     lenRow = len(mazeImg)
     lenCol = len(mazeImg[lenRow-1])
+
+    ## Inisialisasi dictionary arrUpNodes dan arrLeftNodes
+    for x in range(0, lenCol) :
+        arrLeftNodes[x] = None
+    for y in range(0, lenRow) :
+        arrUpNodes[y] = None
 
     ## Membuat graf dari gambar labirin
     for i in range(0, lenRow) :
@@ -188,20 +203,30 @@ def solve():
                 ## Membentuk edges dari node yang baru dibuat dengan node di atasnya dan/atau di kirinya
                 # Jika ada jalan ke atas
                 if(UP == 1) :
-                    upperNode = upperNodeOf(dataNodes, identity)
+                    upperNode = arrUpNodes[dataNodes[identity][0]]
                     if(upperNode != None) :
                         addEdge(dictNodes, identity, upperNode)
                 # Jika ada jalan ke kiri
                 if(LEFT == 1) :
-                    leftNode = leftNodeOf(dataNodes, identity)
+                    leftNode = arrLeftNodes[dataNodes[identity][1]]
                     if(leftNode != None) :
                         addEdge(dictNodes, identity, leftNode)
 
+                ## Mengupdate arrLeftNodes dan arrUpNodes
+                arrLeftNodes[i] = identity
+                arrUpNodes[j] = identity
+
                 identity += 1
+
     ## Menentukan Start Node dan End Node dari data nodes
     startNode = 0
     endNode = len(dataNodes) - 1 
-    
+
+    ## Berurusan dengan waktu proses
+    endGraphTimer = time.process_time()
+    print("Graphing Time : ", end="", flush=True)
+    print(endGraphTimer - graphTimer)
+    solveTimer = time.process_time()
 
     ## Bagian untuk solvingnya (pakai depth first search (stack) ditambah sedikit elemen dari pencariaan jalur terpendek)
     currNode = startNode                    # Current Node
@@ -214,8 +239,11 @@ def solve():
         
         while(adjNodes != [] and currNode != endNode) :
             nextNode = nearEndNode(dataNodes, adjNodes, endNode)
-           
-           ## Jika nextNode belum pernah dikunjungi
+
+            ##Bagian untuk menganimasikan pencarian jalan
+            animate(dataNodes, solveStack, picName)
+
+            ## Jika nextNode belum pernah dikunjungi
             if(not (dataNodes[nextNode][6])) :
                 dictNodes[currNode].remove(nextNode)
                 currNode = nextNode
@@ -242,9 +270,9 @@ def solve():
     if(lenSolve > 0) :
 
         ## Menghentikan timer
-        endTimer = time.process_time()
-        print("Elapsed Time : ", end="", flush=True)
-        print(endTimer - startTimer)
+        endSolveTimer = time.process_time()
+        print("Solving (+ Animation)Time : ", end="", flush=True)
+        print(endSolveTimer - solveTimer)
 
         ## Menggambar hasil solusi di gambar labirinnya
         drawPath(dataNodes, solveStack, mazeImg)
@@ -254,15 +282,16 @@ def solve():
         mazeImg = cv2.resize(mazeImg, dim, interpolation = cv2.INTER_AREA)
         imgBefore = cv2.imread(picName, cv2.IMREAD_COLOR)
         imgBefore = cv2.resize(imgBefore, dim, interpolation = cv2.INTER_AREA)
-
+        
         ## Menampilkan gambar ke layar
+        cv2.destroyAllWindows()
         cv2.imshow("after", mazeImg)
         cv2.imshow("before", imgBefore)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-        cv2.imwrite("rez" + picName, imgBefore)
-        cv2.imwrite("hasilpath" + picName, mazeImg)
-
+        #cv2.imwrite("rez" + picName, imgBefore)
+        #cv2.imwrite("hasilpath" + picName, mazeImg)
+        
     ## jika tidak ditemukan lintasan dari titik awal ke titik akhir
     else :
         print("There\'s no way from start to finish")  
