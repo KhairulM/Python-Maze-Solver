@@ -143,15 +143,15 @@ def leftNodeOf(dataNodes, nodeId) :
         
 def nearEndNode(dataNodes, adjList, endNode) :
     ## Mencari node dari dari adjList yang paling dekat dengan titik akhir
-    distance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[0]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[0]][1])**2)
+    dist2End = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[0]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[0]][1])**2)
     node = adjList[0]
     i = 1
     lenAdj = len(adjList)
 
     while i < lenAdj :
-        currDistance = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[i]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[i]][1])**2)
-        if distance > currDistance :
-            distance = currDistance
+        currDist2End = math.sqrt((dataNodes[endNode][0]-dataNodes[adjList[i]][0])**2 + (dataNodes[endNode][1]-dataNodes[adjList[i]][1])**2)
+        if dist2End > currDist2End :
+            dist2End = currDist2End
             node = adjList[i]
 
         i += 1
